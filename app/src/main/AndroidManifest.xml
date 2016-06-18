@@ -2,7 +2,10 @@
 <manifest package="com.example.android.popularmovies"
           xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS"/>
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS"/>
 
     <application
         android:allowBackup="true"
@@ -21,5 +24,31 @@
         </activity>
         <activity android:name=".DetailActivity">
         </activity>
+        <provider
+            android:authorities="com.example.android.popularmovies.data.MovieProvider"
+            android:name="com.example.android.popularmovies.data.generated.MovieProvider"
+            android:exported="false"
+            android:syncable="true"/>
+
+        <service
+            android:name="com.example.android.popularmovies.sync.MovieSyncService"
+
+            >
+            <intent-filter>
+                <action android:name="android.content.SyncAdapter" />
+            </intent-filter>
+            <meta-data
+                android:name="android.content.SyncAdapter"
+                android:resource="@xml/syncadapter" />
+        </service>
+
+        <service android:name="com.example.android.popularmovies.sync.MovieAuthenticatorService">
+            <intent-filter>
+                <action android:name="android.accounts.AccountAuthenticator" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accounts.AccountAuthenticator"
+                android:resource="@xml/authenticator" />
+        </service>
     </application>
 </manifest>

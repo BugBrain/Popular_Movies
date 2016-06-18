@@ -39,7 +39,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
+    @Override
+    protected void onResume(){
+        super.onResume();
+        MainMovieFragment mainMovieFragment = (MainMovieFragment) getSupportFragmentManager().findFragmentById(R.id.fragment);
+        if(null != mainMovieFragment){
+            mainMovieFragment.updateMovieDb();
+        }
+    }
 
 
 

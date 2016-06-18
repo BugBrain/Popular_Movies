@@ -10,8 +10,16 @@
     <string name="pref_sort_default">popular</string>
 
 
+
     <string name="pref_sort_label_Popular">Popular</string>
     <string name="pref_sort_label_Rated">Top Rated</string>
+    <string name="pref_sort_label_Favorite">Favorites</string>
+
     <string name="pref_sort_popular">popular</string>
     <string name="pref_sort_rated">top_rated</string>
+    <string name="pref_sort_favorite">favorite</string>
+
+    <!-- SyncAdapter related -->
+    <string name="sync_account_type">popularmovies.example.com</string>
+    <string name="content_authority">com.example.android.popularmovies.app</string>
 </resources>
