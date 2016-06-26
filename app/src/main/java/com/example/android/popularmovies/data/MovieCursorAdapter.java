@@ -8,7 +8,9 @@ import android.view.ViewGroup;
 import android.widget.CursorAdapter;
 import android.widget.ImageView;
 
+import com.example.android.popularmovies.MainMovieFragment;
 import com.example.android.popularmovies.R;
+import com.example.android.popularmovies.Utility;
 import com.squareup.picasso.Picasso;
 
 /**
@@ -43,8 +45,13 @@ public class MovieCursorAdapter extends CursorAdapter{
     @Override
     public void bindView(View view, Context context, Cursor cursor){
         ViewHolder viewHolder = (ViewHolder) view.getTag();
+        int posterPath;
+        String viewSetting = Utility.getViewSettings(context);
 
-        Picasso.with(context).load(cursor.getString(MovieColumns.COL_POSTER_PATH))
+
+        posterPath = MainMovieFragment.COL_POSTER_PATH;
+
+        Picasso.with(context).load(cursor.getString(posterPath))
                 .into(viewHolder.posterView);
 
     }

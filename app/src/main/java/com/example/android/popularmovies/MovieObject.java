@@ -1,108 +1,114 @@
 package com.example.android.popularmovies;
 
-import android.os.Parcel;
-import android.os.Parcelable;
-
 /**
  * Created by Warren on 5/22/2016.
  */
-public class MovieObject implements Parcelable{
-    String originalTitle, id, posterPath, plotSynopsis,voteAverage, releaseDate;
+public class MovieObject {
 
-    public String getOriginalTitle() {
-        return originalTitle;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public void setOriginalTitle(String originalTitle) {
-        this.originalTitle = originalTitle;
-    }
+    private int objectType;
+    private String originalTitle;
+    private String plotSynopsis;
+    private String ratings;
+    private String releaseDate;
+    private String posterPath;
+    private String trailerName;
+    private String youTubeUrl;
+    private String reviewsAuthorName;
+    private String reviewsContent;
+    private String reviewsUrl;
+    private String movieId;
 
     public String getPosterPath() {
         return posterPath;
     }
 
-    public void setPosterPath(String posterPath) {
-        this.posterPath = posterPath;
+    public String getOriginalTitle() {
+        return originalTitle;
     }
 
     public String getPlotSynopsis() {
         return plotSynopsis;
     }
 
-    public void setPlotSynopsis(String plotSynopsis) {
-        this.plotSynopsis = plotSynopsis;
-    }
-
-    public String getVoteAverage() {
-        return voteAverage;
-    }
-
-    public void setVoteAverage(String voteAverage) {
-        this.voteAverage = voteAverage;
+    public String getRatings() {
+        return ratings;
     }
 
     public String getReleaseDate() {
         return releaseDate;
     }
 
-    public void setReleaseDate(String releaseDate) {
-        this.releaseDate = releaseDate;
+    public int getObjectType() {
+
+        return objectType;
     }
 
-    public MovieObject(String originalTitle, String id, String posterPath, String plotSynopsis,
-                       String voteAverage, String releaseDate){
+    public MovieObject(int objectType, String trailerName, String youTubeUrl) {
+        this.objectType = objectType;
+        this.trailerName = trailerName;
+        this.youTubeUrl = youTubeUrl;
+    }
+
+    public MovieObject(int objectType, String reviewsAuthorName, String reviewsContent, String reviewsUrl) {
+
+        this.objectType = objectType;
+        this.reviewsAuthorName = reviewsAuthorName;
+        this.reviewsContent = reviewsContent;
+        this.reviewsUrl = reviewsUrl;
+    }
+
+    public String getMovieId() {
+        return movieId;
+    }
+
+    public MovieObject(int objectType, String movieId, String originalTitle, String plotSynopsis, String ratings, String releaseDate, String posterPath) {
+
+        this.objectType = objectType;
+        this.movieId = movieId;
         this.originalTitle = originalTitle;
-        this.id = id;
-        this.posterPath = posterPath;
         this.plotSynopsis = plotSynopsis;
-        this.voteAverage = voteAverage;
+        this.ratings = ratings;
         this.releaseDate = releaseDate;
+        this.posterPath = posterPath;
     }
 
-    private MovieObject(Parcel in){
-        originalTitle = in.readString();
-        id = in.readString();
-        posterPath = in.readString();
-        plotSynopsis = in.readString();
-        voteAverage = in.readString();
-        releaseDate = in.readString();
+    public String getReviewsAuthorName() {
+        return reviewsAuthorName;
     }
 
-    @Override
-    public int describeContents() {
-        return 0;
+    public void setReviewsAuthorName(String reviewsAuthorName) {
+        this.reviewsAuthorName = reviewsAuthorName;
     }
 
-
-
-    @Override
-    public void writeToParcel(Parcel parcel, int i) {
-        parcel.writeString(originalTitle);
-        parcel.writeString(id);
-        parcel.writeString(posterPath);
-        parcel.writeString(plotSynopsis);
-        parcel.writeString(voteAverage);
-        parcel.writeString(releaseDate);
+    public String getReviewsContent() {
+        return reviewsContent;
     }
 
-    public static final Parcelable.Creator<MovieObject> CREATOR = new Parcelable.Creator<MovieObject>() {
-        @Override
-        public MovieObject createFromParcel(Parcel parcel) {
-            return new MovieObject(parcel);
-        }
+    public void setReviewsContent(String reviewsContent) {
+        this.reviewsContent = reviewsContent;
+    }
 
-        @Override
-        public MovieObject[] newArray(int i) {
-            return new MovieObject[i];
-        }
+    public String getReviewsUrl() {
+        return reviewsUrl;
+    }
 
-    };
+    public void setReviewsUrl(String reviewsUrl) {
+        this.reviewsUrl = reviewsUrl;
+    }
+
+    public String getTrailerName() {
+        return trailerName;
+    }
+
+    public void setTrailerName(String trailerName) {
+        this.trailerName = trailerName;
+    }
+
+    public String getYouTubeUrl() {
+        return youTubeUrl;
+    }
+
+    public void setYouTubeUrl(String youTubeUrl) {
+        this.youTubeUrl = youTubeUrl;
+    }
 }

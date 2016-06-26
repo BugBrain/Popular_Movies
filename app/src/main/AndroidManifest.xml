@@ -20,19 +20,41 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <activity android:name=".SettingsActivity">
+        <activity
+            android:name=".DetailActivity"
+            android:label="@string/title_activity_detail"
+            android:parentActivityName=".MainActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.example.android.popularmovies.MainActivity" />
         </activity>
-        <activity android:name=".DetailActivity">
+        <activity
+            android:name=".SettingsActivity"
+            android:label="@string/title_activity_settings"
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/SettingsTheme">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.example.android.popularmovies.MainActivity" />
         </activity>
         <provider
-            android:authorities="com.example.android.popularmovies.data.MovieProvider"
-            android:name="com.example.android.popularmovies.data.generated.MovieProvider"
+            android:authorities="com.example.android.popularmovies.app"
+            android:name=".data.MovieProvider"
             android:exported="false"
             android:syncable="true"/>
 
-        <service
-            android:name="com.example.android.popularmovies.sync.MovieSyncService"
+        <service android:name=".sync.MovieAuthenticatorService">
+            <intent-filter>
+                <action android:name="android.accounts.AccountAuthenticator" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accounts.AccountAuthenticator"
+                android:resource="@xml/authenticator" />
+        </service>
 
+        <service
+            android:name=".sync.MovieSyncService"
+            android:exported="true"
             >
             <intent-filter>
                 <action android:name="android.content.SyncAdapter" />
@@ -42,13 +64,6 @@
                 android:resource="@xml/syncadapter" />
         </service>
 
-        <service android:name="com.example.android.popularmovies.sync.MovieAuthenticatorService">
-            <intent-filter>
-                <action android:name="android.accounts.AccountAuthenticator" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accounts.AccountAuthenticator"
-                android:resource="@xml/authenticator" />
-        </service>
+
     </application>
 </manifest>

@@ -1,17 +1,49 @@
 package com.example.android.popularmovies;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
-public class MainActivity extends AppCompatActivity {
+import com.example.android.popularmovies.sync.MovieSyncAdapter;
+
+
+public class MainActivity extends AppCompatActivity implements MainMovieFragment.Callback{
+
+    public static final String LOG_TAG = MainActivity.class.getSimpleName();
+    private static final String DETAIL_ACTIVITY_FRAGMENT_TAG = "DFTAG";
+
+    private String mViewSetting;
+    private boolean mTwoPane;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.v(LOG_TAG, "onCreate");
+        MovieSyncAdapter.syncImmediately(this, Utility.getViewSettings(this));
+        mViewSetting = Utility.getViewSettings(this);
+
+
         setContentView(R.layout.activity_main);
+        if(findViewById(R.id.movie_detail_container) != null){
+            mTwoPane = true;
+            if(savedInstanceState == null){
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.movie_detail_container, new DetailActivityFragment(),
+                                DETAIL_ACTIVITY_FRAGMENT_TAG).commit();
+            }
+            else {
+                mTwoPane = false;
+                getSupportActionBar().setElevation(0f);
+            }
+        }
+
+        MainMovieFragment mainMovieFragment = (MainMovieFragment) getSupportFragmentManager().findFragmentById(R.id.fragment_movie_grid);
+
+
 
     }
 
@@ -42,13 +74,51 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume(){
         super.onResume();
-        MainMovieFragment mainMovieFragment = (MainMovieFragment) getSupportFragmentManager().findFragmentById(R.id.fragment);
-        if(null != mainMovieFragment){
-            mainMovieFragment.updateMovieDb();
+
+        Log.v("Main Activity", "onResume triggered");
+
+        String viewSelection = Utility.getViewSettings( this );
+        Log.v("Main Activity", "onResume viewSelection: " + viewSelection + " mViewSetting: " + mViewSetting);
+
+//         update the location in our second pane using the fragment manager
+        if (!viewSelection.equals(mViewSetting)) {
+            Log.v(LOG_TAG, "onResume: mViewSetting != viewSelection");
+            MainMovieFragment mainMovieFragment =
+                    (MainMovieFragment) getSupportFragmentManager()
+                            .findFragmentById(R.id.fragment_main);
+            if (null != mainMovieFragment) {
+                mainMovieFragment.onMovieChangeSettingsChange();
+                Log.v(LOG_TAG, "onResume: mainMovieFragment != null ");
+            }
+            DetailActivityFragment detailActivityFragment =
+                    (DetailActivityFragment) getSupportFragmentManager()
+                            .findFragmentByTag(DETAIL_ACTIVITY_FRAGMENT_TAG);
+            if(null != detailActivityFragment){
+                detailActivityFragment.onMovieChanged(viewSelection);
+            }
+            mViewSetting = viewSelection;
         }
+
     }
 
+    @Override
+    public void onItemSelected(Uri contentUri){
+        if(mTwoPane){
+            Bundle args = new Bundle();
+            args.putParcelable(DetailActivityFragment.DETAIL_URI, contentUri);
 
+            DetailActivityFragment fragment = new DetailActivityFragment();
+            fragment.setArguments(args);
+
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.movie_detail_container, fragment, DETAIL_ACTIVITY_FRAGMENT_TAG)
+                    .commit();
+        }else {
+            Intent intent = new Intent(this, DetailActivity.class).setData(contentUri);
+            startActivity(intent);
+        }
+
+    }
 
 
 }

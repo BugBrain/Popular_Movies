@@ -4,19 +4,21 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.AbstractThreadedSyncAdapter;
 import android.content.ContentProviderClient;
+import android.content.ContentProviderOperation;
 import android.content.ContentResolver;
-import android.content.ContentValues;
 import android.content.Context;
+import android.content.OperationApplicationException;
 import android.content.SyncRequest;
 import android.content.SyncResult;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.RemoteException;
 import android.util.Log;
 
 import com.example.android.popularmovies.R;
-import com.example.android.popularmovies.data.MovieColumns;
-import com.example.android.popularmovies.data.MovieProvider;
+import com.example.android.popularmovies.Utility;
+import com.example.android.popularmovies.data.MovieContract;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -28,7 +30,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Vector;
+import java.util.ArrayList;
 
 /**
  * Created by Warren on 6/18/2016.
@@ -38,17 +40,98 @@ public class MovieSyncAdapter extends AbstractThreadedSyncAdapter {
     public static final int SYNC_INTERVAL = 60 * 180;
     public static final int SYNC_FLEXTIME = SYNC_INTERVAL/3;
 
+    private static final String POPULAR = "popular";
+    private static final String RATED = "top_rated";
+    private static final String FAVORITE = "favorite";
+
     public static final String SYNC_PREFS = "prefs";
 
-    public final String LOG_TAG = MovieSyncAdapter.class.getSimpleName();
+    public static final String LOG_TAG = MovieSyncAdapter.class.getSimpleName();
 
     public MovieSyncAdapter(Context context, boolean autoInitialize){
         super(context,autoInitialize);
     }
 
-    public void onPerformSync(Account account, Bundle extras, String authority, ContentProviderClient provider, SyncResult syncResult){
+    public void onPerformSync(Account account, Bundle extras, String authority,
+                              ContentProviderClient provider, SyncResult syncResult){
         Log.d(LOG_TAG, "Starting sync");
 
+        getMovieListJson(extras);
+
+    }
+
+
+
+    private String getTrailersAndReviewsJson(String movieId){
+        //Prepare url connections
+        HttpURLConnection urlConnection = null;
+        BufferedReader reader = null;
+
+        //To contain JSON response
+        String movieJsonStr = null;
+
+
+        try{
+            final String MOVIE_BASE_URL = "https://api.themoviedb.org/3/movie";
+            final String MOVIE_API_KEY = "api_key";
+            final String MOVIE_API = getContext().getString(R.string.movie_api_key);
+            final String MOVIE_APPEND_PATH = "&append_to_response=trailers,reviews";
+
+            String uriString = MOVIE_BASE_URL + "/" + movieId + "?" + MOVIE_API_KEY + "=" + MOVIE_API
+                    + MOVIE_APPEND_PATH;
+
+
+            Uri.Builder builder = new Uri.Builder();
+            builder.encodedPath(uriString).build();
+
+            URL url = new URL(builder.toString());
+
+            //creates request and opens connection to Mdb
+            urlConnection = (HttpURLConnection) url.openConnection();
+            urlConnection.setRequestMethod("GET");
+            urlConnection.connect();
+
+            //reads input stream into string
+            InputStream inputStream = urlConnection.getInputStream();
+            StringBuffer buffer = new StringBuffer();
+            if(inputStream == null){
+                //if input stream is empty
+                return null;
+            }
+
+            reader = new BufferedReader(new InputStreamReader(inputStream));
+
+            String line;
+            while((line = reader.readLine()) != null){
+                //Cleanup string for debugging readability
+                buffer.append(line +"\n");
+            }
+
+            if(buffer.length() == 0){
+                //checks for empty string
+                return null;
+            }
+            movieJsonStr = buffer.toString();
+
+        } catch (IOException ex){
+            //provide error message
+            Log.e(LOG_TAG, "Error ", ex);
+        } finally {
+            if(urlConnection != null){
+                urlConnection.disconnect();
+            }
+            if(reader != null){
+                try{
+                    reader.close();
+                }catch (final IOException ex){
+                    Log.e(LOG_TAG, "Error closing stream", ex);
+                }
+            }
+        }
+        return movieJsonStr;
+    }
+
+    private void getMovieListJson(Bundle extras){
         //Prepare url connections
         HttpURLConnection urlConnection = null;
         BufferedReader reader = null;
@@ -96,15 +179,16 @@ public class MovieSyncAdapter extends AbstractThreadedSyncAdapter {
                 return;
             }
             movieJsonStr = buffer.toString();
-            getMovieDataFromJson(movieJsonStr);
+            Log.v(LOG_TAG, "MOVIE JSON Download Complete");
+
+            getMovieDataFromJson(movieJsonStr, params);
 
 
         } catch (IOException ex){
             //provide error message
             Log.e(LOG_TAG, "Error ", ex);
-        } catch (JSONException e) {
-            Log.e(LOG_TAG, e.getMessage(), e);
-            e.printStackTrace();
+        } catch (JSONException ex){
+            Log.e(LOG_TAG, "JSON problem " + ex);
         } finally {
             if(urlConnection != null){
                 urlConnection.disconnect();
@@ -120,7 +204,8 @@ public class MovieSyncAdapter extends AbstractThreadedSyncAdapter {
 
     }
 
-    private void getMovieDataFromJson(String movieJsonStr) throws JSONException{
+    private void getMovieDataFromJson(String movieJsonStr,
+                                      String params) throws JSONException{
 
         //names of JSON objects to extract
         final String OWM_RESULTS = "results";
@@ -131,28 +216,53 @@ public class MovieSyncAdapter extends AbstractThreadedSyncAdapter {
         final String OWM_USER_RATING = "vote_average";
         final String OWM_RELEASE_DATE = "release_date";
 
+        Uri contentUri;
+        String _id;
+
+        Log.v(LOG_TAG, params);
+
+        switch (params){
+            case POPULAR:{
+                contentUri = MovieContract.PopularMovieEntry.CONTENT_URI;
+                _id = MovieContract.PopularMovieEntry._ID;
+                break;
+            }
+            case RATED:{
+                contentUri = MovieContract.RatedMovieEntry.CONTENT_URI;
+                _id = MovieContract.RatedMovieEntry._ID;
+                break;
+            }
+            default:{
+                throw new UnsupportedOperationException("getMovieDataFromJson:" +
+                        " view settings prefs not matching!");
+            }
+
+        }
+
         try {
 
             JSONObject movieJson = new JSONObject(movieJsonStr);
             JSONArray movieJsonArray = movieJson.getJSONArray(OWM_RESULTS);
 
-            Vector<ContentValues> cVVector = new Vector<ContentValues>(movieJsonArray.length());
+            ArrayList<ContentProviderOperation> batchOperations = new ArrayList<ContentProviderOperation>(movieJsonArray.length());
 
-
+            //delete all rows of table first
+            getContext().getContentResolver().delete(contentUri, null, null);
 
             for (int i = 0; i < movieJsonArray.length(); i++) {
                 String originalTitle;
-                String id;
+                int id;
                 String posterPath;
                 String plotSynopsis;
                 String voteAverage;
                 String releaseDate;
+                String trailersAndReviewsJsonString;
 
                 //getting JSON object representing the movie
                 JSONObject movie = movieJsonArray.getJSONObject(i);
 
                 originalTitle = movie.getString(OWM_ORIGINAL_TITLE);
-                id = movie.getString(OWM_ID);
+                id = movie.getInt(OWM_ID);
 
                 posterPath = Uri.parse("http://image.tmdb.org/t/p/w185").buildUpon()
                         .appendEncodedPath(movie.getString(OWM_POSTER_PATH)).build().toString();
@@ -160,43 +270,55 @@ public class MovieSyncAdapter extends AbstractThreadedSyncAdapter {
                 plotSynopsis = movie.getString(OWM_PLOT_SYNOPSIS);
                 voteAverage = movie.getString(OWM_USER_RATING);
                 releaseDate = movie.getString(OWM_RELEASE_DATE);
+                trailersAndReviewsJsonString = getTrailersAndReviewsJson(Integer.toString(id));
 
+                ContentProviderOperation.Builder builder = ContentProviderOperation.newInsert(
+                        contentUri);
 
-                ContentValues movieValues = new ContentValues();
+                builder.withValue(_id, id);
+                builder.withValue(MovieContract.COLUMN_TITLE, originalTitle);
+                builder.withValue(MovieContract.COLUMN_POSTER_PATH, posterPath);
+                builder.withValue(MovieContract.COLUMN_PLOT, plotSynopsis);
+                builder.withValue(MovieContract.COLUMN_VOTE_AVERAGE, voteAverage);
+                builder.withValue(MovieContract.COLUMN_RELEASE_DATE, releaseDate);
+                builder.withValue(MovieContract.COLUMN_TRAILERS_AND_REVIEWS,
+                        trailersAndReviewsJsonString);
 
-                movieValues.put(MovieColumns.TITLE, originalTitle);
-                movieValues.put(MovieColumns.MOVIE_ID, id);
-                movieValues.put(MovieColumns.POSTER_PATH, posterPath);
-                movieValues.put(MovieColumns.MOVIE_PLOT, plotSynopsis);
-                movieValues.put(MovieColumns.VOTE_AVERAGE, voteAverage);
-                movieValues.put(MovieColumns.RELEASE_DATE, releaseDate);
-
-                cVVector.add(movieValues);
+                batchOperations.add(builder.build());
             }
 
 
-            if(cVVector.size() > 0){
-                ContentValues[] cvArray = new ContentValues[cVVector.size()];
-                cVVector.toArray(cvArray);
-                getContext().getContentResolver().bulkInsert(MovieProvider.Movies.Content_URI, cvArray);
+            if(batchOperations.size() > 0){
+
+                //add new rows
+                getContext().getContentResolver().applyBatch(MovieContract.CONTENT_AUTHORITY, batchOperations);
             }
 
-            Log.d(LOG_TAG, "Sync Complete. " + cVVector.size() + " Inserted");
+            Log.d(LOG_TAG, "Content Uri for movie database: " + contentUri.toString());
+
+            Log.d(LOG_TAG, "Sync Complete. " + batchOperations.size() + " Inserted");
         } catch (JSONException e){
             Log.e(LOG_TAG, e.getMessage(), e);
             e.printStackTrace();
+        } catch(RemoteException | OperationApplicationException e){
+            Log.e(LOG_TAG, "Error applying batch insert", e);
         }
 
     }
 
     public static void syncImmediately(Context context, String setViewPref) {
+        if (setViewPref.matches(FAVORITE)){
+            return;
+        }
         Bundle bundle = new Bundle();
         bundle.putBoolean(ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
         bundle.putBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, true);
         bundle.putString(SYNC_PREFS, setViewPref);
+        Log.v(LOG_TAG, "syncImmediately");
         ContentResolver.requestSync(getSyncAccount(context),
                 context.getString(R.string.content_authority), bundle);
     }
+
 
     public static Account getSyncAccount(Context context) {
         // Get an instance of the Android account manager
@@ -224,8 +346,11 @@ public class MovieSyncAdapter extends AbstractThreadedSyncAdapter {
              * here.
              */
 
+            Log.v(LOG_TAG, "getSynAccount");
             onAccountCreated(newAccount, context);
+
         }
+
         return newAccount;
     }
 
@@ -239,6 +364,10 @@ public class MovieSyncAdapter extends AbstractThreadedSyncAdapter {
          * Without calling setSyncAutomatically, our periodic sync will not be enabled.
          */
         ContentResolver.setSyncAutomatically(newAccount, context.getString(R.string.content_authority), true);
+
+        Log.v(LOG_TAG, "onAccountCreated");
+
+        syncImmediately(context, Utility.getViewSettings(context));
 
     }
 
@@ -262,6 +391,7 @@ public class MovieSyncAdapter extends AbstractThreadedSyncAdapter {
     }
 
     public static void initializeSyncAdapter(Context context) {
+        Log.v(LOG_TAG, "initializeSyncAdapter");
         getSyncAccount(context);
     }
 }
