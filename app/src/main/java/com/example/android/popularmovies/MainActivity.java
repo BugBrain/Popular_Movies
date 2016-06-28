@@ -85,7 +85,7 @@ public class MainActivity extends AppCompatActivity implements MainMovieFragment
             Log.v(LOG_TAG, "onResume: mViewSetting != viewSelection");
             MainMovieFragment mainMovieFragment =
                     (MainMovieFragment) getSupportFragmentManager()
-                            .findFragmentById(R.id.fragment_main);
+                            .findFragmentById(R.id.fragment_movie_grid);
             if (null != mainMovieFragment) {
                 mainMovieFragment.onMovieChangeSettingsChange();
                 Log.v(LOG_TAG, "onResume: mainMovieFragment != null ");

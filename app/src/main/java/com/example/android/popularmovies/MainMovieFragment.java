@@ -19,21 +19,15 @@ import com.example.android.popularmovies.data.MovieContract;
 import com.example.android.popularmovies.data.MovieCursorAdapter;
 import com.example.android.popularmovies.sync.MovieSyncAdapter;
 
-import java.util.ArrayList;
-
 /**
  * Created by Warren on 5/22/2016.
  */
 public class MainMovieFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor>{
 
-    public ImageAdapter mImageAdapter;
 
     public static final String LOG_TAG = DetailActivityFragment.class.getSimpleName();
 
-    private ArrayList<MovieObject> movieList;
-
     public static final String SYNC_PREFS = "prefs";
-    private String sort;
 
     private static final String POPULAR = "popular";
     private static final String RATED = "top_rated";
@@ -50,8 +44,6 @@ public class MainMovieFragment extends Fragment implements LoaderManager.LoaderC
     public static final int COL_TRAILERS_AND_REVIEWS = 6;
 
     private int mPosition = ListView.INVALID_POSITION;
-
-    private LoaderManager.LoaderCallbacks<Cursor> mCallbacks;
 
     private MovieCursorAdapter mMovieCursorAdapter;
 
@@ -88,8 +80,6 @@ public class MainMovieFragment extends Fragment implements LoaderManager.LoaderC
         mMovieCursorAdapter = new MovieCursorAdapter(getActivity(), null, 0);
 
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-
-        sort = Utility.getViewSettings(getContext());
 
         // Get a reference to the GridView, and attach this adapter to it.
         GridView gridView = (GridView) rootView.findViewById(R.id.movies_grid);
@@ -201,18 +191,10 @@ public class MainMovieFragment extends Fragment implements LoaderManager.LoaderC
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data){
         mMovieCursorAdapter.swapCursor(data);
-        if (!data.moveToFirst()){
-//            throw new UnsupportedOperationException("onLoadFinished cursor query is empty");
-        }
-
-
     }
 
     @Override
     public void onLoaderReset(Loader<Cursor> loader){
         mMovieCursorAdapter.swapCursor(null);
     }
-
-
-
 }

@@ -3,6 +3,8 @@ package com.example.android.popularmovies;
 import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
@@ -21,6 +23,7 @@ import com.example.android.popularmovies.data.MovieDbHelper;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by Warren on 6/22/2016.
@@ -62,9 +65,11 @@ public class MovieDetailsAdapter extends ArrayAdapter<MovieObject> {
                                 null);
                 if (cursor != null && cursor.moveToFirst()){
                     favoriteStar.setChecked(true);
+                    cursor.close();
                 } else {
                     favoriteStar.setChecked(false);
                 }
+
 
                 favoriteStar.setOnClickListener(new View.OnClickListener(){
                     @Override
@@ -121,9 +126,20 @@ public class MovieDetailsAdapter extends ArrayAdapter<MovieObject> {
                 trailerButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v){
-                        Intent intent = new Intent(Intent.ACTION_VIEW,
+                        Intent youTubeAppIntent = new Intent(Intent.ACTION_VIEW,
                                 Uri.parse("vnd.youtube://" + movieObject.getYouTubeUrl()));
-                        getContext().startActivity(intent);
+
+                        List<ResolveInfo> list = getContext()
+                                .getPackageManager()
+                                .queryIntentActivities(youTubeAppIntent, PackageManager.MATCH_DEFAULT_ONLY);
+                        if (list.size() == 0){
+                            Intent webVideoIntent = new Intent(Intent.ACTION_VIEW,
+                                    Uri.parse("http://www.youtube.com/watch?v=" + movieObject.getYouTubeUrl()));
+                            getContext().startActivity(webVideoIntent);
+                        }else {
+                            getContext().startActivity(youTubeAppIntent);
+                        }
+
                     }
                 });
                 break;
