@@ -12,7 +12,7 @@
     -->
 
     <fragment
-        android:id="@+id/fragment_main"
+        android:id="@+id/fragment_movie_grid"
         android:name="com.example.android.popularmovies.MainMovieFragment"
         android:layout_width="0dp"
         android:layout_height="match_parent"

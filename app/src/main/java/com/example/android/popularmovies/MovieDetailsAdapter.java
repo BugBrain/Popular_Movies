@@ -17,6 +17,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RatingBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.android.popularmovies.data.MovieContract;
 import com.example.android.popularmovies.data.MovieDbHelper;
@@ -126,18 +127,21 @@ public class MovieDetailsAdapter extends ArrayAdapter<MovieObject> {
                 trailerButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v){
-                        Intent youTubeAppIntent = new Intent(Intent.ACTION_VIEW,
-                                Uri.parse("vnd.youtube://" + movieObject.getYouTubeUrl()));
+                        //create intent for trailer video
+                        Intent youTubeVideoIntent = new Intent(Intent.ACTION_VIEW,
+                                Uri.parse("http://www.youtube.com/watch?v=" + movieObject.getYouTubeUrl()));
 
-                        List<ResolveInfo> list = getContext()
-                                .getPackageManager()
-                                .queryIntentActivities(youTubeAppIntent, PackageManager.MATCH_DEFAULT_ONLY);
-                        if (list.size() == 0){
-                            Intent webVideoIntent = new Intent(Intent.ACTION_VIEW,
-                                    Uri.parse("http://www.youtube.com/watch?v=" + movieObject.getYouTubeUrl()));
-                            getContext().startActivity(webVideoIntent);
-                        }else {
-                            getContext().startActivity(youTubeAppIntent);
+                        // Verify it resolves
+                        PackageManager packageManager = getContext().getPackageManager();
+                        List<ResolveInfo> activities = packageManager.queryIntentActivities(youTubeVideoIntent, 0);
+                        boolean isIntentSafe = activities.size() > 0;
+
+                        // Start an activity if it's safe
+                        if (isIntentSafe) {
+                            getContext().startActivity(youTubeVideoIntent);
+                        } else{
+                            //suggest to download youtube app if no app can handle intent
+                            Toast.makeText(getContext(), "Download YouTube app to watch video.", Toast.LENGTH_LONG).show();
                         }
 
                     }
